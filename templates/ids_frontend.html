@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IDS Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+        }
+        input, select {
+            margin-bottom: 10px;
+            padding: 5px;
+            width: 100%;
+        }
+        button {
+            background-color: #28a745;
+            color: white;
+            padding: 10px;
+            border: none;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        p {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Intrusion Detection System</h2>
+    <form id="prediction-form">
+
+        <label for="protocol_type">Protocol Type:</label>
+        <select id="protocol_type">
+            <option value="tcp">TCP</option>
+            <option value="udp">UDP</option>
+            <option value="icmp">ICMP</option>
+        </select><br>
+
+        <label for="service">Service:</label>
+        <select id="service">
+            <option value="http">HTTP</option>
+            <option value="private">Private</option>
+            <option value="ecr_i">ECR_I</option>
+            <option value="smtp">SMTP</option>
+            <option value="ftp_data">FTP_DATA</option>
+            <option value="other">Other</option>
+        </select><br>
+
+        <label for="flag">Flag:</label>
+        <select id="flag">
+            <option value="SF">SF</option>
+            <option value="S0">S0</option>
+            <option value="REJ">REJ</option>
+            <option value="RSTR">RSTR</option>
+            <option value="SH">SH</option>
+            <option value="S1">S1</option>
+            <option value="S2">S2</option>
+            <option value="S3">S3</option>
+        </select><br>
+
+        <div id="numeric-fields"></div>
+
+        <button type="submit">Predict</button>
+    </form>
+
+    <p id="prediction-result"></p>
+
+    <script>
+        const FEATURES = [
+            "duration", "protocol_type", "service", "flag", "src_bytes", "dst_bytes",
+            "land", "wrong_fragment", "urgent", "hot", "num_failed_logins", "logged_in",
+            "num_compromised", "root_shell", "su_attempted", "num_root", "num_file_creations",
+            "num_shells", "num_access_files", "num_outbound_cmds", "is_host_login",
+            "is_guest_login", "count", "srv_count", "serror_rate", "srv_serror_rate",
+            "rerror_rate", "srv_rerror_rate", "same_srv_rate", "diff_srv_rate",
+            "srv_diff_host_rate", "dst_host_count"
+        ];
+
+        const numericFieldsDiv = document.getElementById("numeric-fields");
+
+        // Generate numeric input fields dynamically
+        FEATURES.forEach(feature => {
+            if (!["protocol_type", "service", "flag"].includes(feature)) {
+                numericFieldsDiv.innerHTML += `
+                    <label for="${feature}">${feature.replace("_", " ")}:</label>
+                    <input type="number" id="${feature}" value="0"><br>
+                `;
+            }
+        });
+
+        document.getElementById("prediction-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            let inputData = {};
+            FEATURES.forEach(feature => {
+                if (["protocol_type", "service", "flag"].includes(feature)) {
+                    inputData[feature] = document.getElementById(feature).value;
+                } else {
+                    inputData[feature] = parseFloat(document.getElementById(feature).value) || 0;
+                }
+            });
+
+            console.log("Sending Data:", inputData);
+
+            const response = await fetch("/predict", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(inputData),
+            });
+
+            const result = await response.json();
+            document.getElementById("prediction-result").innerText = `Prediction: ${result.prediction || result.error}`;
+        });
+    </script>
+
+</body>
+</html>
